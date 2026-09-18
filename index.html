@@ -3,79 +3,161 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>تحديد موقعي</title>
+
+  <title>تحديد موقعي على الخريطة</title>
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
 
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      padding: 40px;
+      margin: 0;
+      padding: 20px;
     }
 
     button {
-      padding: 12px 24px;
+      padding: 12px 25px;
       font-size: 18px;
-      cursor: pointer;
       border: none;
       border-radius: 8px;
+      cursor: pointer;
+      background: #2196f3;
+      color: white;
     }
 
     #location {
+      margin: 15px 0;
+      font-size: 17px;
+    }
+
+    #map {
+      width: 100%;
+      height: 500px;
       margin-top: 20px;
-      font-size: 18px;
+      border-radius: 10px;
     }
   </style>
 </head>
 
 <body>
 
+  <h2>📍 تحديد موقعي</h2>
+
   <button onclick="getLocation()">
     📍 تحديد موقعي
   </button>
 
-  <div id="location"></div>
+  <div id="location">
+    اضغط على الزر لتحديد موقعك
+  </div>
+
+  <!-- الخريطة -->
+  <div id="map"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
+
+    // إنشاء الخريطة
+    const map = L.map("map").setView([36.7538, 3.0588], 10);
+
+    // إضافة خريطة OpenStreetMap
+    L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {
+        attribution: "&copy; OpenStreetMap contributors"
+      }
+    ).addTo(map);
+
+
+    // متغير للعلامة
+    let marker = null;
+
+
+    // تحديد الموقع
     function getLocation() {
-      const locationElement = document.getElementById("location");
+
+      const locationElement =
+        document.getElementById("location");
 
       if (!navigator.geolocation) {
+
         locationElement.textContent =
           "❌ المتصفح لا يدعم تحديد الموقع.";
+
         return;
       }
 
       locationElement.textContent =
         "📍 جارٍ تحديد موقعك...";
 
+
       navigator.geolocation.getCurrentPosition(
+
         function(position) {
-          const latitude = position.coords.latitude;
-          const longitude = position.coords.longitude;
 
+          const latitude =
+            position.coords.latitude;
+
+          const longitude =
+            position.coords.longitude;
+
+
+          // عرض الإحداثيات
           locationElement.innerHTML = `
-            ✅ تم تحديد موقعك بنجاح!<br>
+            ✅ تم تحديد موقعك<br>
             خط العرض: ${latitude}<br>
-            خط الطول: ${longitude}<br><br>
-
-            <a
-              href="https://www.google.com/maps?q=${latitude},${longitude}"
-              target="_blank">
-              🗺️ فتح الموقع في الخريطة
-            </a>
+            خط الطول: ${longitude}
           `;
+
+
+          // نقل الخريطة إلى موقع المستخدم
+          map.setView(
+            [latitude, longitude],
+            16
+          );
+
+
+          // حذف العلامة القديمة
+          if (marker) {
+            map.removeLayer(marker);
+          }
+
+
+          // إضافة علامة جديدة
+          marker = L.marker(
+            [latitude, longitude]
+          ).addTo(map);
+
+
+          // نافذة معلومات
+          marker.bindPopup(`
+            <b>📍 موقعك الحالي</b><br>
+            خط العرض: ${latitude}<br>
+            خط الطول: ${longitude}
+          `).openPopup();
+
         },
 
+
         function(error) {
+
           switch (error.code) {
+
             case error.PERMISSION_DENIED:
               locationElement.textContent =
-                "❌ تم رفض إذن الوصول إلى الموقع.";
+                "❌ تم رفض السماح بالوصول إلى الموقع.";
               break;
 
             case error.POSITION_UNAVAILABLE:
               locationElement.textContent =
-                "❌ تعذر الحصول على موقعك.";
+                "❌ تعذر تحديد موقعك.";
               break;
 
             case error.TIMEOUT:
@@ -85,17 +167,21 @@
 
             default:
               locationElement.textContent =
-                "❌ حدث خطأ غير معروف.";
+                "❌ حدث خطأ أثناء تحديد الموقع.";
           }
+
         },
+
 
         {
           enableHighAccuracy: true,
           timeout: 10000,
           maximumAge: 0
         }
+
       );
     }
+
   </script>
 
 </body>
