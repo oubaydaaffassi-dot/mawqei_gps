@@ -4,108 +4,407 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>خريطة موقعي</title>
+  <title>خريطة موقعي 3D</title>
 
-  <link rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <!-- CesiumJS -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.122/Build/Cesium/Cesium.js"></script>
+
+  <link
+    href="https://cesium.com/downloads/cesiumjs/releases/1.122/Build/Cesium/Widgets/widgets.css"
+    rel="stylesheet"
+  >
 
   <style>
-    #map {
+    html,
+    body,
+    #cesiumContainer {
       width: 100%;
-      height: 500px;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+
+    /* لوحة التحكم */
+    #controls {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
     button {
-      padding: 15px 25px;
-      font-size: 18px;
-      margin: 15px;
+      border: none;
+      border-radius: 10px;
+      padding: 13px 18px;
+      font-size: 16px;
+      cursor: pointer;
+      background: white;
+      color: #222;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+    }
+
+    button:hover {
+      background: #f0f0f0;
+    }
+
+    #message {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+
+      background: rgba(0,0,0,0.75);
+      color: white;
+
+      padding: 10px 18px;
+      border-radius: 10px;
+
+      font-size: 15px;
+      display: none;
     }
   </style>
 </head>
 
 <body>
 
-  <button onclick="getLocation()">📍 تحديد موقعي</button>
+  <!-- أزرار التحكم -->
+  <div id="controls">
 
-  <p id="message">اضغط على الزر</p>
+    <button onclick="getLocation()">
+      📍 تحديد موقعي
+    </button>
 
-  <div id="map"></div>
+    <button onclick="goHome()">
+      🌍 العالم
+    </button>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <button onclick="go3D()">
+      🏙️ عرض 3D
+    </button>
+
+    <button onclick="go2D()">
+      🗺️ عرض 2D
+    </button>
+
+  </div>
+
+  <div id="message"></div>
+
+  <!-- الخريطة -->
+  <div id="cesiumContainer"></div>
+
 
   <script>
 
-    // إنشاء الخريطة
-    const map = L.map("map").setView([36.7538, 3.0588], 12);
+    /*
+      إنشاء الخريطة
+    */
 
-    // تحميل خريطة OpenStreetMap
-    L.tileLayer(
-      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-      {
-        maxZoom: 19,
-        attribution: "© OpenStreetMap"
-      }
-    ).addTo(map);
+    const viewer = new Cesium.Viewer("cesiumContainer", {
+
+      animation: false,
+
+      timeline: false,
+
+      baseLayerPicker: true,
+
+      geocoder: true,
+
+      homeButton: true,
+
+      sceneModePicker: true,
+
+      navigationHelpButton: true,
+
+      fullscreenButton: true,
+
+      terrain: Cesium.Terrain.fromWorldTerrain()
+
+    });
 
 
-    let userMarker;
+    /*
+      إخفاء بعض العناصر إذا أردت واجهة أبسط
+    */
+
+    viewer.scene.globe.depthTestAgainstTerrain = true;
+
+
+    /*
+      رسالة للمستخدم
+    */
+
+    function showMessage(text) {
+
+      const message =
+        document.getElementById("message");
+
+      message.innerHTML = text;
+
+      message.style.display = "block";
+
+      setTimeout(function() {
+
+        message.style.display = "none";
+
+      }, 4000);
+
+    }
+
+
+    /*
+      الانتقال إلى الجزائر
+      عند فتح الخريطة
+    */
+
+    viewer.camera.flyTo({
+
+      destination:
+        Cesium.Cartesian3.fromDegrees(
+          3.0588,
+          36.7538,
+          1500000
+        ),
+
+      duration: 2
+
+    });
+
+
+    /*
+      تحديد موقع المستخدم
+    */
+
+    let userEntity = null;
 
 
     function getLocation() {
 
-      const message = document.getElementById("message");
-
       if (!navigator.geolocation) {
-        message.innerHTML = "❌ المتصفح لا يدعم تحديد الموقع";
+
+        showMessage(
+          "❌ المتصفح لا يدعم تحديد الموقع"
+        );
+
         return;
       }
 
-      message.innerHTML = "📍 جارٍ تحديد موقعك...";
+
+      showMessage(
+        "📍 جارٍ تحديد موقعك..."
+      );
 
 
       navigator.geolocation.getCurrentPosition(
 
         function(position) {
 
-          const lat = position.coords.latitude;
-          const lon = position.coords.longitude;
+          const lat =
+            position.coords.latitude;
 
-          message.innerHTML =
-            "✅ تم تحديد موقعك";
-
-
-          // تحريك الخريطة إلى الموقع
-          map.setView([lat, lon], 17);
+          const lon =
+            position.coords.longitude;
 
 
-          // حذف العلامة القديمة
-          if (userMarker) {
-            map.removeLayer(userMarker);
+          /*
+            حذف العلامة القديمة
+          */
+
+          if (userEntity) {
+
+            viewer.entities.remove(
+              userEntity
+            );
+
           }
 
 
-          // وضع علامة على الموقع
-          userMarker = L.marker([lat, lon])
-            .addTo(map)
-            .bindPopup("📍 أنت هنا")
-            .openPopup();
+          /*
+            إنشاء علامة الموقع
+          */
+
+          userEntity =
+            viewer.entities.add({
+
+              position:
+                Cesium.Cartesian3.fromDegrees(
+                  lon,
+                  lat,
+                  100
+                ),
+
+              point: {
+
+                pixelSize: 18,
+
+                color:
+                  Cesium.Color.RED,
+
+                outlineColor:
+                  Cesium.Color.WHITE,
+
+                outlineWidth: 3
+
+              },
+
+              label: {
+
+                text: "📍 أنت هنا",
+
+                font:
+                  "18px sans-serif",
+
+                fillColor:
+                  Cesium.Color.WHITE,
+
+                outlineColor:
+                  Cesium.Color.BLACK,
+
+                outlineWidth: 3,
+
+                style:
+                  Cesium.LabelStyle.FILL_AND_OUTLINE,
+
+                verticalOrigin:
+                  Cesium.VerticalOrigin.BOTTOM,
+
+                pixelOffset:
+                  new Cesium.Cartesian2(0, -20)
+
+              }
+
+            });
+
+
+          /*
+            الانتقال إلى موقع المستخدم
+          */
+
+          viewer.camera.flyTo({
+
+            destination:
+              Cesium.Cartesian3.fromDegrees(
+                lon,
+                lat,
+                1500
+              ),
+
+            duration: 2
+
+          });
+
+
+          showMessage(
+            "✅ تم تحديد موقعك بنجاح"
+          );
 
         },
+
 
         function(error) {
 
-          message.innerHTML =
-            "❌ لم نتمكن من تحديد موقعك: " + error.message;
+          let text =
+            "❌ لم نتمكن من تحديد موقعك";
+
+          if (error.code === 1) {
+
+            text =
+              "❌ تم رفض إذن الوصول إلى الموقع";
+
+          }
+
+          else if (error.code === 2) {
+
+            text =
+              "❌ الموقع غير متوفر";
+
+          }
+
+          else if (error.code === 3) {
+
+            text =
+              "❌ انتهت مهلة تحديد الموقع";
+
+          }
+
+
+          showMessage(text);
 
         },
 
+
         {
+
           enableHighAccuracy: true,
+
           timeout: 15000,
+
           maximumAge: 0
+
         }
+
       );
+
     }
+
+
+    /*
+      العودة إلى عرض العالم
+    */
+
+    function goHome() {
+
+      viewer.camera.flyTo({
+
+        destination:
+          Cesium.Cartesian3.fromDegrees(
+            3.0588,
+            36.7538,
+            1500000
+          ),
+
+        duration: 2
+
+      });
+
+    }
+
+
+    /*
+      عرض 3D
+    */
+
+    function go3D() {
+
+      viewer.scene.morphTo3D(2);
+
+      showMessage(
+        "🏙️ تم تفعيل العرض ثلاثي الأبعاد"
+      );
+
+    }
+
+
+    /*
+      عرض 2D
+    */
+
+    function go2D() {
+
+      viewer.scene.morphTo2D(2);
+
+      showMessage(
+        "🗺️ تم تفعيل العرض ثنائي الأبعاد"
+      );
+
+    }
+
 
   </script>
 
