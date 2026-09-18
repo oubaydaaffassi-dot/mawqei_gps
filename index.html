@@ -1,8 +1,9 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>موقعي GPS</title>
 
 <link rel="stylesheet"
@@ -12,32 +13,52 @@ href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 body{
   margin:0;
   font-family:Arial,sans-serif;
-  background:#f5f7fa;
+  background:#f2f4f7;
 }
+
 header{
   background:#1769aa;
   color:white;
-  padding:18px;
   text-align:center;
+  padding:18px;
 }
-h1{margin:0}
+
+header h1{
+  margin:0 0 8px;
+}
+
 #map{
-  height:65vh;
-  min-height:400px;
+  height:60vh;
+  min-height:350px;
 }
+
 .info{
   background:white;
-  padding:15px;
+  padding:20px;
   text-align:center;
 }
+
+#status{
+  margin-bottom:12px;
+  line-height:1.8;
+}
+
 button{
+  display:block;
+  width:90%;
+  max-width:400px;
+  margin:auto;
+  padding:16px;
   background:#1769aa;
   color:white;
-  border:0;
-  border-radius:10px;
-  padding:13px 25px;
-  font-size:16px;
-  margin-top:8px;
+  border:none;
+  border-radius:12px;
+  font-size:18px;
+  font-weight:bold;
+}
+
+button:active{
+  transform:scale(.98);
 }
 </style>
 </head>
@@ -46,20 +67,28 @@ button{
 
 <header>
   <h1>📍 موقعي GPS</h1>
-  <p>الخريطة والموقع الحالي</p>
+  <div>تحديد موقعك الحالي</div>
 </header>
 
 <div id="map"></div>
 
 <div class="info">
-  <div id="status">اضغط على الزر لتحديد موقعك</div>
-  <button onclick="getLocation()">📍 تحديد موقعي</button>
+
+  <div id="status">
+    اضغط على الزر لتحديد موقعك
+  </div>
+
+  <button onclick="getLocation()">
+    📍 تحديد موقعي
+  </button>
+
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-const map = L.map('map').setView([24.7136,46.6753],5);
+
+const map = L.map('map').setView([28, 3], 5);
 
 L.tileLayer(
   'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -69,51 +98,107 @@ L.tileLayer(
   }
 ).addTo(map);
 
-let marker;
+let marker = null;
+let circle = null;
 
 function getLocation(){
 
-  const status = document.getElementById('status');
+  const status = document.getElementById("status");
 
-  if(!navigator.geolocation){
-    status.textContent='المتصفح لا يدعم تحديد الموقع';
+  status.innerHTML = "📡 جاري البحث عن موقعك...";
+
+  if (!navigator.geolocation) {
+
+    status.innerHTML =
+      "❌ المتصفح لا يدعم تحديد الموقع.";
+
     return;
   }
 
-  status.textContent='جاري تحديد موقعك...';
-
   navigator.geolocation.getCurrentPosition(
+
     function(position){
 
-      const lat=position.coords.latitude;
-      const lon=position.coords.longitude;
-      const accuracy=position.coords.accuracy;
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+      const accuracy = position.coords.accuracy;
 
-      map.setView([lat,lon],17);
+      map.setView([lat, lon], 17);
 
       if(marker){
-        marker.setLatLng([lat,lon]);
+        marker.setLatLng([lat, lon]);
       }else{
-        marker=L.marker([lat,lon]).addTo(map);
+        marker = L.marker([lat, lon]).addTo(map);
+      }
+
+      if(circle){
+        circle.setLatLng([lat, lon]);
+        circle.setRadius(accuracy);
+      }else{
+        circle = L.circle(
+          [lat, lon],
+          {
+            radius:accuracy
+          }
+        ).addTo(map);
       }
 
       marker.bindPopup(
-        '📍 موقعي<br>'+
-        'خط العرض: '+lat.toFixed(6)+'<br>'+
-        'خط الطول: '+lon.toFixed(6)
+        "📍 موقعك الحالي<br><br>" +
+        "خط العرض: " + lat.toFixed(6) +
+        "<br>" +
+        "خط الطول: " + lon.toFixed(6) +
+        "<br>" +
+        "الدقة: " + Math.round(accuracy) + " متر"
       ).openPopup();
 
-      status.innerHTML=
-        'خط العرض: <b>'+lat.toFixed(6)+'</b><br>'+
-        'خط الطول: <b>'+lon.toFixed(6)+'</b><br>'+
-        'الدقة: <b>'+Math.round(accuracy)+' متر</b>';
+      status.innerHTML =
+        "✅ تم تحديد موقعك<br><br>" +
+        "خط العرض: <b>" + lat.toFixed(6) + "</b><br>" +
+        "خط الطول: <b>" + lon.toFixed(6) + "</b><br>" +
+        "الدقة: <b>" + Math.round(accuracy) + " متر</b>";
+
     },
 
     function(error){
-      status.textContent='لم يتم الحصول على الموقع. تأكد من السماح للموقع.';
+
+      if(error.code === 1){
+
+        status.innerHTML =
+          "❌ تم رفض صلاحية الموقع.<br>" +
+          "اسمح لـ Chrome بالوصول إلى الموقع.";
+
+      }else if(error.code === 2){
+
+        status.innerHTML =
+          "❌ الهاتف لم يستطع تحديد موقع GPS.<br>" +
+          "تأكد أن خدمة الموقع مفعلة.";
+
+      }else if(error.code === 3){
+
+        status.innerHTML =
+          "⏱️ انتهى وقت البحث عن الموقع.<br>" +
+          "حاول مرة أخرى.";
+
+      }else{
+
+        status.innerHTML =
+          "❌ حدث خطأ أثناء تحديد الموقع.";
+
+      }
+
+    },
+
+    {
+      enableHighAccuracy:true,
+      timeout:15000,
+      maximumAge:0
     }
+
   );
+
 }
+
 </script>
 
 </body>
