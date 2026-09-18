@@ -1,12 +1,14 @@
+```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>خريطة موقعي 3D</title>
+  <title>خريطتي 3D</title>
 
-  <!-- CesiumJS -->
+  <!-- Cesium -->
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.122/Build/Cesium/Cesium.js"></script>
 
   <link
@@ -15,6 +17,7 @@
   >
 
   <style>
+
     html,
     body,
     #cesiumContainer {
@@ -26,142 +29,1018 @@
       font-family: Arial, sans-serif;
     }
 
-    /* لوحة التحكم */
-    #controls {
+    /* =========================
+       الشريط العلوي
+    ========================= */
+
+    #topBar {
       position: absolute;
-      top: 15px;
-      right: 15px;
-      z-index: 1000;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2000;
+
       display: flex;
-      flex-direction: column;
-      gap: 10px;
+      align-items: center;
+      gap: 5px;
+
+      padding: 7px;
+
+      background: rgba(255,255,255,0.96);
+
+      border-radius: 14px;
+
+      box-shadow:
+        0 3px 15px rgba(0,0,0,0.25);
+
+      max-width: calc(100% - 20px);
+
+      overflow-x: auto;
+
+      white-space: nowrap;
     }
 
-    button {
+    .mapButton {
       border: none;
-      border-radius: 10px;
-      padding: 13px 18px;
-      font-size: 16px;
-      cursor: pointer;
-      background: white;
+      background: transparent;
       color: #222;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+
+      padding: 10px 13px;
+
+      border-radius: 9px;
+
+      font-size: 14px;
+
+      cursor: pointer;
+
+      white-space: nowrap;
     }
 
-    button:hover {
-      background: #f0f0f0;
+    .mapButton:hover {
+      background: #eeeeee;
     }
+
+    .mapButton.active {
+      background: #1976d2;
+      color: white;
+    }
+
+    /* =========================
+       الإعدادات
+    ========================= */
+
+    #settingsPanel {
+      position: absolute;
+
+      top: 68px;
+      right: 15px;
+
+      z-index: 3000;
+
+      width: 280px;
+
+      background: rgba(255,255,255,0.98);
+
+      border-radius: 14px;
+
+      padding: 16px;
+
+      box-shadow:
+        0 5px 20px rgba(0,0,0,0.3);
+
+      display: none;
+    }
+
+    #settingsPanel.show {
+      display: block;
+    }
+
+    #settingsPanel h3 {
+      margin-top: 0;
+      margin-bottom: 15px;
+    }
+
+    .setting {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      padding: 11px 0;
+
+      border-bottom: 1px solid #eee;
+    }
+
+    .setting:last-child {
+      border-bottom: none;
+    }
+
+    /* =========================
+       البحث
+    ========================= */
+
+    #searchBox {
+      position: absolute;
+
+      top: 68px;
+      left: 15px;
+
+      z-index: 3000;
+
+      display: none;
+
+      background: white;
+
+      padding: 8px;
+
+      border-radius: 10px;
+
+      box-shadow:
+        0 3px 15px rgba(0,0,0,0.25);
+    }
+
+    #searchBox.show {
+      display: flex;
+    }
+
+    #searchInput {
+      width: 220px;
+
+      border: 1px solid #ddd;
+
+      border-radius: 7px;
+
+      padding: 10px;
+
+      font-size: 14px;
+
+      outline: none;
+    }
+
+    #searchGo {
+      margin-right: 5px;
+
+      border: none;
+
+      border-radius: 7px;
+
+      padding: 0 14px;
+
+      background: #1976d2;
+
+      color: white;
+
+      cursor: pointer;
+    }
+
+    /* =========================
+       الرسائل
+    ========================= */
 
     #message {
       position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1000;
 
-      background: rgba(0,0,0,0.75);
+      bottom: 25px;
+      left: 50%;
+
+      transform: translateX(-50%);
+
+      z-index: 3000;
+
+      background: rgba(0,0,0,0.78);
+
       color: white;
 
       padding: 10px 18px;
+
       border-radius: 10px;
 
       font-size: 15px;
+
       display: none;
+
+      white-space: nowrap;
     }
+
+    /* =========================
+       الهاتف
+    ========================= */
+
+    @media (max-width: 600px) {
+
+      #topBar {
+        top: 7px;
+        max-width: calc(100% - 12px);
+      }
+
+      .mapButton {
+        padding: 9px 10px;
+        font-size: 13px;
+      }
+
+      #settingsPanel {
+        top: 60px;
+        right: 8px;
+        width: calc(100% - 40px);
+      }
+
+      #searchBox {
+        top: 60px;
+        left: 8px;
+        right: 8px;
+      }
+
+      #searchInput {
+        width: 100%;
+      }
+
+    }
+
   </style>
+
 </head>
 
 <body>
 
-  <!-- أزرار التحكم -->
-  <div id="controls">
 
-    <button onclick="getLocation()">
-      📍 تحديد موقعي
-    </button>
+<!-- ==================================
+     شريط التحكم
+================================== -->
 
-    <button onclick="goHome()">
-      🌍 العالم
-    </button>
+<div id="topBar">
 
-    <button onclick="go3D()">
-      🏙️ عرض 3D
-    </button>
+  <button
+    class="mapButton"
+    id="settingsButton"
+    onclick="toggleSettings()">
+    ⚙️ الإعدادات
+  </button>
 
-    <button onclick="go2D()">
-      🗺️ عرض 2D
-    </button>
+  <button
+    class="mapButton active"
+    id="normalButton"
+    onclick="normalMap()">
+    🗺️ عادي
+  </button>
+
+  <button
+    class="mapButton"
+    id="satelliteButton"
+    onclick="satelliteMap()">
+    🛰️ قمر صناعي
+  </button>
+
+  <button
+    class="mapButton"
+    onclick="go3D()">
+    🌍 3D
+  </button>
+
+  <button
+    class="mapButton"
+    onclick="go2D()">
+    🗺️ 2D
+  </button>
+
+  <button
+    class="mapButton"
+    onclick="getLocation()">
+    📍 موقعي
+  </button>
+
+  <button
+    class="mapButton"
+    onclick="toggleSearch()">
+    🔎 بحث
+  </button>
+
+  <button
+    class="mapButton"
+    onclick="goHome()">
+    🌐 العالم
+  </button>
+
+  <button
+    class="mapButton"
+    onclick="toggleFullscreen()">
+    ⛶
+  </button>
+
+</div>
+
+
+<!-- ==================================
+     الإعدادات
+================================== -->
+
+<div id="settingsPanel">
+
+  <h3>⚙️ إعدادات الخريطة</h3>
+
+  <div class="setting">
+
+    <label>
+      🏙️ أسماء المدن والأماكن
+    </label>
+
+    <input
+      type="checkbox"
+      id="labelsCheck"
+      checked
+      onchange="toggleLabels()"
+    >
 
   </div>
 
-  <div id="message"></div>
 
-  <!-- الخريطة -->
-  <div id="cesiumContainer"></div>
+  <div class="setting">
+
+    <label>
+      🗺️ الحدود والولايات
+    </label>
+
+    <input
+      type="checkbox"
+      id="boundariesCheck"
+      checked
+      onchange="toggleBoundaries()"
+    >
+
+  </div>
 
 
-  <script>
+  <div class="setting">
 
-    /*
-      إنشاء الخريطة
-    */
+    <label>
+      🛣️ الطرق
+    </label>
 
-    const viewer = new Cesium.Viewer("cesiumContainer", {
+    <input
+      type="checkbox"
+      id="roadsCheck"
+      onchange="toggleRoads()"
+    >
 
+  </div>
+
+
+  <div class="setting">
+
+    <label>
+      ⛰️ التضاريس
+    </label>
+
+    <input
+      type="checkbox"
+      id="terrainCheck"
+      checked
+      onchange="toggleTerrain()"
+    >
+
+  </div>
+
+</div>
+
+
+<!-- ==================================
+     البحث
+================================== -->
+
+<div id="searchBox">
+
+  <input
+    id="searchInput"
+    type="text"
+    placeholder="ابحث عن مدينة أو مكان..."
+  >
+
+  <button
+    id="searchGo"
+    onclick="searchPlace()">
+    بحث
+  </button>
+
+</div>
+
+
+<!-- الرسائل -->
+
+<div id="message"></div>
+
+
+<!-- الخريطة -->
+
+<div id="cesiumContainer"></div>
+
+
+<script>
+
+  /* ==================================
+     إنشاء الخريطة
+  ================================== */
+
+  const viewer = new Cesium.Viewer(
+    "cesiumContainer",
+    {
       animation: false,
-
       timeline: false,
 
-      baseLayerPicker: true,
+      baseLayerPicker: false,
+      geocoder: false,
+      homeButton: false,
 
-      geocoder: true,
+      sceneModePicker: false,
 
-      homeButton: true,
+      navigationHelpButton: false,
 
-      sceneModePicker: true,
+      fullscreenButton: false,
 
-      navigationHelpButton: true,
-
-      fullscreenButton: true,
-
-      terrain: Cesium.Terrain.fromWorldTerrain()
-
-    });
-
-
-    /*
-      إخفاء بعض العناصر إذا أردت واجهة أبسط
-    */
-
-    viewer.scene.globe.depthTestAgainstTerrain = true;
+      terrainProvider:
+        new Cesium.EllipsoidTerrainProvider()
+    }
+  );
 
 
-    /*
-      رسالة للمستخدم
-    */
+  /* ==================================
+     المتغيرات
+  ================================== */
 
-    function showMessage(text) {
+  let satelliteLayer = null;
+  let normalLayer = null;
+  let labelsLayer = null;
+  let roadsLayer = null;
 
-      const message =
-        document.getElementById("message");
+  let userEntity = null;
 
-      message.innerHTML = text;
 
-      message.style.display = "block";
+  /* ==================================
+     رسالة
+  ================================== */
 
-      setTimeout(function() {
+  function showMessage(text) {
 
-        message.style.display = "none";
+    const message =
+      document.getElementById("message");
 
-      }, 4000);
+    message.innerHTML = text;
+
+    message.style.display = "block";
+
+    setTimeout(() => {
+      message.style.display = "none";
+    }, 3500);
+
+  }
+
+
+  /* ==================================
+     الإعدادات
+  ================================== */
+
+  function toggleSettings() {
+
+    document
+      .getElementById("settingsPanel")
+      .classList.toggle("show");
+
+  }
+
+
+  /* ==================================
+     البحث
+  ================================== */
+
+  function toggleSearch() {
+
+    const box =
+      document.getElementById("searchBox");
+
+    box.classList.toggle("show");
+
+    if (box.classList.contains("show")) {
+
+      document
+        .getElementById("searchInput")
+        .focus();
+
+    }
+
+  }
+
+
+  /* ==================================
+     بحث Nominatim
+  ================================== */
+
+  async function searchPlace() {
+
+    const input =
+      document
+        .getElementById("searchInput")
+        .value
+        .trim();
+
+
+    if (!input) {
+
+      showMessage(
+        "اكتب اسم المكان أولاً"
+      );
+
+      return;
 
     }
 
 
-    /*
-      الانتقال إلى الجزائر
-      عند فتح الخريطة
-    */
+    showMessage(
+      "🔎 جارٍ البحث..."
+    );
+
+
+    try {
+
+      const url =
+        "https://nominatim.openstreetmap.org/search" +
+        "?format=json" +
+        "&q=" +
+        encodeURIComponent(input) +
+        "&limit=1";
+
+
+      const response =
+        await fetch(url);
+
+
+      const data =
+        await response.json();
+
+
+      if (!data.length) {
+
+        showMessage(
+          "❌ لم يتم العثور على المكان"
+        );
+
+        return;
+
+      }
+
+
+      const place = data[0];
+
+
+      const lat =
+        parseFloat(place.lat);
+
+      const lon =
+        parseFloat(place.lon);
+
+
+      viewer.camera.flyTo({
+
+        destination:
+          Cesium.Cartesian3.fromDegrees(
+            lon,
+            lat,
+            4000
+          ),
+
+        duration: 2
+
+      });
+
+
+      showMessage(
+        "📍 " +
+        place.display_name
+      );
+
+
+    } catch (error) {
+
+      showMessage(
+        "❌ حدث خطأ أثناء البحث"
+      );
+
+    }
+
+  }
+
+
+  document
+    .getElementById("searchInput")
+    .addEventListener(
+      "keydown",
+      function(event) {
+
+        if (event.key === "Enter") {
+
+          searchPlace();
+
+        }
+
+      }
+    );
+
+
+  /* ==================================
+     الخريطة العادية
+  ================================== */
+
+  function normalMap() {
+
+    removeBaseLayers();
+
+
+    normalLayer =
+      viewer.imageryLayers.addImageryProvider(
+
+        new Cesium.ArcGisMapServerImageryProvider({
+          url:
+            "https://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer"
+        })
+
+      );
+
+
+    addReferenceLayers();
+
+
+    setActive(
+      "normalButton",
+      "satelliteButton"
+    );
+
+
+    showMessage(
+      "🗺️ تم تشغيل الخريطة العادية"
+    );
+
+  }
+
+
+  /* ==================================
+     القمر الصناعي
+  ================================== */
+
+  function satelliteMap() {
+
+    removeBaseLayers();
+
+
+    satelliteLayer =
+      viewer.imageryLayers.addImageryProvider(
+
+        new Cesium.ArcGisMapServerImageryProvider({
+          url:
+            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer"
+        })
+
+      );
+
+
+    addReferenceLayers();
+
+
+    setActive(
+      "satelliteButton",
+      "normalButton"
+    );
+
+
+    showMessage(
+      "🛰️ تم تشغيل صور الأقمار الصناعية"
+    );
+
+  }
+
+
+  /* ==================================
+     طبقة أسماء الأماكن والحدود
+  ================================== */
+
+  function addReferenceLayers() {
+
+    removeReferenceLayers();
+
+
+    labelsLayer =
+      viewer.imageryLayers.addImageryProvider(
+
+        new Cesium.ArcGisMapServerImageryProvider({
+          url:
+            "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer"
+        })
+
+      );
+
+
+    labelsLayer.alpha = 1.0;
+
+
+    if (
+      !document
+        .getElementById("labelsCheck")
+        .checked
+    ) {
+
+      labelsLayer.show = false;
+
+    }
+
+
+    if (
+      !document
+        .getElementById("boundariesCheck")
+        .checked
+    ) {
+
+      labelsLayer.show = false;
+
+    }
+
+  }
+
+
+  /* ==================================
+     إزالة طبقات المرجع
+  ================================== */
+
+  function removeReferenceLayers() {
+
+    if (labelsLayer) {
+
+      viewer.imageryLayers.remove(
+        labelsLayer,
+        true
+      );
+
+      labelsLayer = null;
+
+    }
+
+
+    if (roadsLayer) {
+
+      viewer.imageryLayers.remove(
+        roadsLayer,
+        true
+      );
+
+      roadsLayer = null;
+
+    }
+
+  }
+
+
+  /* ==================================
+     إزالة طبقات الخريطة
+  ================================== */
+
+  function removeBaseLayers() {
+
+    if (normalLayer) {
+
+      viewer.imageryLayers.remove(
+        normalLayer,
+        true
+      );
+
+      normalLayer = null;
+
+    }
+
+
+    if (satelliteLayer) {
+
+      viewer.imageryLayers.remove(
+        satelliteLayer,
+        true
+      );
+
+      satelliteLayer = null;
+
+    }
+
+
+    removeReferenceLayers();
+
+  }
+
+
+  /* ==================================
+     أسماء المدن
+  ================================== */
+
+  function toggleLabels() {
+
+    if (!labelsLayer) {
+
+      return;
+
+    }
+
+
+    const enabled =
+      document
+        .getElementById("labelsCheck")
+        .checked;
+
+
+    labelsLayer.show =
+      enabled &&
+      document
+        .getElementById("boundariesCheck")
+        .checked;
+
+
+    showMessage(
+      enabled
+        ? "🏙️ تم إظهار أسماء الأماكن"
+        : "🏙️ تم إخفاء أسماء الأماكن"
+    );
+
+  }
+
+
+  /* ==================================
+     الحدود
+  ================================== */
+
+  function toggleBoundaries() {
+
+    if (!labelsLayer) {
+
+      return;
+
+    }
+
+
+    const enabled =
+      document
+        .getElementById("boundariesCheck")
+        .checked;
+
+
+    labelsLayer.show =
+      enabled &&
+      document
+        .getElementById("labelsCheck")
+        .checked;
+
+
+    showMessage(
+      enabled
+        ? "🗺️ تم إظهار الحدود"
+        : "🗺️ تم إخفاء الحدود"
+    );
+
+  }
+
+
+  /* ==================================
+     الطرق
+  ================================== */
+
+  function toggleRoads() {
+
+    const enabled =
+      document
+        .getElementById("roadsCheck")
+        .checked;
+
+
+    if (!enabled) {
+
+      if (roadsLayer) {
+
+        viewer.imageryLayers.remove(
+          roadsLayer,
+          true
+        );
+
+        roadsLayer = null;
+
+      }
+
+
+      showMessage(
+        "🛣️ تم إخفاء الطرق"
+      );
+
+      return;
+
+    }
+
+
+    roadsLayer =
+      viewer.imageryLayers.addImageryProvider(
+
+        new Cesium.ArcGisMapServerImageryProvider({
+          url:
+            "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer"
+        })
+
+      );
+
+
+    showMessage(
+      "🛣️ تم إظهار الطرق"
+    );
+
+  }
+
+
+  /* ==================================
+     التضاريس
+  ================================== */
+
+  function toggleTerrain() {
+
+    const enabled =
+      document
+        .getElementById("terrainCheck")
+        .checked;
+
+
+    if (enabled) {
+
+      /*
+       * نستخدم التضاريس العالمية
+       * المتوفرة من Cesium ion.
+       *
+       * إذا لم يكن لديك Cesium ion token
+       * ستبقى الخريطة بدون تضاريس.
+       */
+
+      try {
+
+        viewer.terrainProvider =
+          Cesium.createWorldTerrain();
+
+        showMessage(
+          "⛰️ تم تشغيل التضاريس"
+        );
+
+      } catch (error) {
+
+        showMessage(
+          "⚠️ التضاريس تحتاج إعداد Cesium ion"
+        );
+
+      }
+
+    }
+
+    else {
+
+      viewer.terrainProvider =
+        new Cesium.EllipsoidTerrainProvider();
+
+      showMessage(
+        "⛰️ تم إيقاف التضاريس"
+      );
+
+    }
+
+  }
+
+
+  /* ==================================
+     3D
+  ================================== */
+
+  function go3D() {
+
+    viewer.scene.morphTo3D(2);
+
+    showMessage(
+      "🌍 تم تفعيل العرض ثلاثي الأبعاد"
+    );
+
+  }
+
+
+  /* ==================================
+     2D
+  ================================== */
+
+  function go2D() {
+
+    viewer.scene.morphTo2D(2);
+
+    showMessage(
+      "🗺️ تم تفعيل العرض ثنائي الأبعاد"
+    );
+
+  }
+
+
+  /* ==================================
+     العالم
+  ================================== */
+
+  function goHome() {
 
     viewer.camera.flyTo({
 
@@ -176,237 +1055,242 @@
 
     });
 
-
-    /*
-      تحديد موقع المستخدم
-    */
-
-    let userEntity = null;
+  }
 
 
-    function getLocation() {
+  /* ==================================
+     تحديد الموقع
+  ================================== */
 
-      if (!navigator.geolocation) {
+  function getLocation() {
 
-        showMessage(
-          "❌ المتصفح لا يدعم تحديد الموقع"
-        );
-
-        return;
-      }
-
+    if (!navigator.geolocation) {
 
       showMessage(
-        "📍 جارٍ تحديد موقعك..."
+        "❌ المتصفح لا يدعم تحديد الموقع"
       );
 
+      return;
 
-      navigator.geolocation.getCurrentPosition(
-
-        function(position) {
-
-          const lat =
-            position.coords.latitude;
-
-          const lon =
-            position.coords.longitude;
+    }
 
 
-          /*
-            حذف العلامة القديمة
-          */
-
-          if (userEntity) {
-
-            viewer.entities.remove(
-              userEntity
-            );
-
-          }
+    showMessage(
+      "📍 جارٍ تحديد موقعك..."
+    );
 
 
-          /*
-            إنشاء علامة الموقع
-          */
+    navigator.geolocation.getCurrentPosition(
 
-          userEntity =
-            viewer.entities.add({
+      function(position) {
 
-              position:
-                Cesium.Cartesian3.fromDegrees(
-                  lon,
-                  lat,
-                  100
-                ),
+        const lat =
+          position.coords.latitude;
 
-              point: {
-
-                pixelSize: 18,
-
-                color:
-                  Cesium.Color.RED,
-
-                outlineColor:
-                  Cesium.Color.WHITE,
-
-                outlineWidth: 3
-
-              },
-
-              label: {
-
-                text: "📍 أنت هنا",
-
-                font:
-                  "18px sans-serif",
-
-                fillColor:
-                  Cesium.Color.WHITE,
-
-                outlineColor:
-                  Cesium.Color.BLACK,
-
-                outlineWidth: 3,
-
-                style:
-                  Cesium.LabelStyle.FILL_AND_OUTLINE,
-
-                verticalOrigin:
-                  Cesium.VerticalOrigin.BOTTOM,
-
-                pixelOffset:
-                  new Cesium.Cartesian2(0, -20)
-
-              }
-
-            });
+        const lon =
+          position.coords.longitude;
 
 
-          /*
-            الانتقال إلى موقع المستخدم
-          */
+        if (userEntity) {
 
-          viewer.camera.flyTo({
+          viewer.entities.remove(
+            userEntity
+          );
 
-            destination:
+        }
+
+
+        userEntity =
+          viewer.entities.add({
+
+            position:
               Cesium.Cartesian3.fromDegrees(
                 lon,
                 lat,
-                1500
+                100
               ),
 
-            duration: 2
+
+            point: {
+
+              pixelSize: 18,
+
+              color:
+                Cesium.Color.RED,
+
+              outlineColor:
+                Cesium.Color.WHITE,
+
+              outlineWidth: 3
+
+            },
+
+
+            label: {
+
+              text:
+                "📍 أنت هنا",
+
+              font:
+                "18px sans-serif",
+
+              fillColor:
+                Cesium.Color.WHITE,
+
+              outlineColor:
+                Cesium.Color.BLACK,
+
+              outlineWidth: 3,
+
+              style:
+                Cesium.LabelStyle
+                  .FILL_AND_OUTLINE,
+
+              verticalOrigin:
+                Cesium.VerticalOrigin.BOTTOM,
+
+              pixelOffset:
+                new Cesium.Cartesian2(
+                  0,
+                  -20
+                )
+
+            }
 
           });
 
 
+        viewer.camera.flyTo({
+
+          destination:
+            Cesium.Cartesian3.fromDegrees(
+              lon,
+              lat,
+              1500
+            ),
+
+          duration: 2
+
+        });
+
+
+        showMessage(
+          "✅ تم تحديد موقعك"
+        );
+
+      },
+
+
+      function(error) {
+
+        if (error.code === 1) {
+
           showMessage(
-            "✅ تم تحديد موقعك بنجاح"
+            "❌ يجب السماح بالوصول إلى موقعك"
           );
-
-        },
-
-
-        function(error) {
-
-          let text =
-            "❌ لم نتمكن من تحديد موقعك";
-
-          if (error.code === 1) {
-
-            text =
-              "❌ تم رفض إذن الوصول إلى الموقع";
-
-          }
-
-          else if (error.code === 2) {
-
-            text =
-              "❌ الموقع غير متوفر";
-
-          }
-
-          else if (error.code === 3) {
-
-            text =
-              "❌ انتهت مهلة تحديد الموقع";
-
-          }
-
-
-          showMessage(text);
-
-        },
-
-
-        {
-
-          enableHighAccuracy: true,
-
-          timeout: 15000,
-
-          maximumAge: 0
 
         }
 
-      );
+        else if (error.code === 2) {
+
+          showMessage(
+            "❌ الموقع غير متوفر"
+          );
+
+        }
+
+        else {
+
+          showMessage(
+            "❌ انتهت مهلة تحديد الموقع"
+          );
+
+        }
+
+      },
+
+
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
+      }
+
+    );
+
+  }
+
+
+  /* ==================================
+     تفعيل زر
+  ================================== */
+
+  function setActive(
+    activeId,
+    inactiveId
+  ) {
+
+    document
+      .getElementById(activeId)
+      .classList.add("active");
+
+
+    document
+      .getElementById(inactiveId)
+      .classList.remove("active");
+
+  }
+
+
+  /* ==================================
+     ملء الشاشة
+  ================================== */
+
+  function toggleFullscreen() {
+
+    if (!document.fullscreenElement) {
+
+      document
+        .documentElement
+        .requestFullscreen();
 
     }
 
+    else {
 
-    /*
-      العودة إلى عرض العالم
-    */
-
-    function goHome() {
-
-      viewer.camera.flyTo({
-
-        destination:
-          Cesium.Cartesian3.fromDegrees(
-            3.0588,
-            36.7538,
-            1500000
-          ),
-
-        duration: 2
-
-      });
+      document.exitFullscreen();
 
     }
 
-
-    /*
-      عرض 3D
-    */
-
-    function go3D() {
-
-      viewer.scene.morphTo3D(2);
-
-      showMessage(
-        "🏙️ تم تفعيل العرض ثلاثي الأبعاد"
-      );
-
-    }
+  }
 
 
-    /*
-      عرض 2D
-    */
+  /* ==================================
+     تشغيل الخريطة أول مرة
+  ================================== */
 
-    function go2D() {
-
-      viewer.scene.morphTo2D(2);
-
-      showMessage(
-        "🗺️ تم تفعيل العرض ثنائي الأبعاد"
-      );
-
-    }
+  normalMap();
 
 
-  </script>
+  /* ==================================
+     الانتقال إلى الجزائر
+  ================================== */
+
+  viewer.camera.flyTo({
+
+    destination:
+      Cesium.Cartesian3.fromDegrees(
+        3.0588,
+        36.7538,
+        1500000
+      ),
+
+    duration: 2
+
+  });
+
+</script>
 
 </body>
 </html>
+```
