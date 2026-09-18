@@ -1,12 +1,120 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>موقعي GPS</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>موقعي GPS</title>
+
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#f5f7fa;
+}
+header{
+  background:#1769aa;
+  color:white;
+  padding:18px;
+  text-align:center;
+}
+h1{margin:0}
+#map{
+  height:65vh;
+  min-height:400px;
+}
+.info{
+  background:white;
+  padding:15px;
+  text-align:center;
+}
+button{
+  background:#1769aa;
+  color:white;
+  border:0;
+  border-radius:10px;
+  padding:13px 25px;
+  font-size:16px;
+  margin-top:8px;
+}
+</style>
 </head>
+
 <body>
+
+<header>
   <h1>📍 موقعي GPS</h1>
-  <p>تم تشغيل نسخة الويب بنجاح.</p>
+  <p>الخريطة والموقع الحالي</p>
+</header>
+
+<div id="map"></div>
+
+<div class="info">
+  <div id="status">اضغط على الزر لتحديد موقعك</div>
+  <button onclick="getLocation()">📍 تحديد موقعي</button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+const map = L.map('map').setView([24.7136,46.6753],5);
+
+L.tileLayer(
+  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {
+    maxZoom:19,
+    attribution:'© OpenStreetMap'
+  }
+).addTo(map);
+
+let marker;
+
+function getLocation(){
+
+  const status = document.getElementById('status');
+
+  if(!navigator.geolocation){
+    status.textContent='المتصفح لا يدعم تحديد الموقع';
+    return;
+  }
+
+  status.textContent='جاري تحديد موقعك...';
+
+  navigator.geolocation.getCurrentPosition(
+    function(position){
+
+      const lat=position.coords.latitude;
+      const lon=position.coords.longitude;
+      const accuracy=position.coords.accuracy;
+
+      map.setView([lat,lon],17);
+
+      if(marker){
+        marker.setLatLng([lat,lon]);
+      }else{
+        marker=L.marker([lat,lon]).addTo(map);
+      }
+
+      marker.bindPopup(
+        '📍 موقعي<br>'+
+        'خط العرض: '+lat.toFixed(6)+'<br>'+
+        'خط الطول: '+lon.toFixed(6)
+      ).openPopup();
+
+      status.innerHTML=
+        'خط العرض: <b>'+lat.toFixed(6)+'</b><br>'+
+        'خط الطول: <b>'+lon.toFixed(6)+'</b><br>'+
+        'الدقة: <b>'+Math.round(accuracy)+' متر</b>';
+    },
+
+    function(error){
+      status.textContent='لم يتم الحصول على الموقع. تأكد من السماح للموقع.';
+    }
+  );
+}
+</script>
+
 </body>
 </html>
