@@ -4,181 +4,106 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>تحديد موقعي على الخريطة</title>
+  <title>خريطة موقعي</title>
 
-  <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin: 0;
-      padding: 20px;
-    }
-
-    button {
-      padding: 12px 25px;
-      font-size: 18px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background: #2196f3;
-      color: white;
-    }
-
-    #location {
-      margin: 15px 0;
-      font-size: 17px;
-    }
-
     #map {
       width: 100%;
       height: 500px;
-      margin-top: 20px;
-      border-radius: 10px;
+    }
+
+    button {
+      padding: 15px 25px;
+      font-size: 18px;
+      margin: 15px;
     }
   </style>
 </head>
 
 <body>
 
-  <h2>📍 تحديد موقعي</h2>
+  <button onclick="getLocation()">📍 تحديد موقعي</button>
 
-  <button onclick="getLocation()">
-    📍 تحديد موقعي
-  </button>
+  <p id="message">اضغط على الزر</p>
 
-  <div id="location">
-    اضغط على الزر لتحديد موقعك
-  </div>
-
-  <!-- الخريطة -->
   <div id="map"></div>
 
-  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
 
     // إنشاء الخريطة
-    const map = L.map("map").setView([36.7538, 3.0588], 10);
+    const map = L.map("map").setView([36.7538, 3.0588], 12);
 
-    // إضافة خريطة OpenStreetMap
+    // تحميل خريطة OpenStreetMap
     L.tileLayer(
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       {
-        attribution: "&copy; OpenStreetMap contributors"
+        maxZoom: 19,
+        attribution: "© OpenStreetMap"
       }
     ).addTo(map);
 
 
-    // متغير للعلامة
-    let marker = null;
+    let userMarker;
 
 
-    // تحديد الموقع
     function getLocation() {
 
-      const locationElement =
-        document.getElementById("location");
+      const message = document.getElementById("message");
 
       if (!navigator.geolocation) {
-
-        locationElement.textContent =
-          "❌ المتصفح لا يدعم تحديد الموقع.";
-
+        message.innerHTML = "❌ المتصفح لا يدعم تحديد الموقع";
         return;
       }
 
-      locationElement.textContent =
-        "📍 جارٍ تحديد موقعك...";
+      message.innerHTML = "📍 جارٍ تحديد موقعك...";
 
 
       navigator.geolocation.getCurrentPosition(
 
         function(position) {
 
-          const latitude =
-            position.coords.latitude;
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
 
-          const longitude =
-            position.coords.longitude;
-
-
-          // عرض الإحداثيات
-          locationElement.innerHTML = `
-            ✅ تم تحديد موقعك<br>
-            خط العرض: ${latitude}<br>
-            خط الطول: ${longitude}
-          `;
+          message.innerHTML =
+            "✅ تم تحديد موقعك";
 
 
-          // نقل الخريطة إلى موقع المستخدم
-          map.setView(
-            [latitude, longitude],
-            16
-          );
+          // تحريك الخريطة إلى الموقع
+          map.setView([lat, lon], 17);
 
 
           // حذف العلامة القديمة
-          if (marker) {
-            map.removeLayer(marker);
+          if (userMarker) {
+            map.removeLayer(userMarker);
           }
 
 
-          // إضافة علامة جديدة
-          marker = L.marker(
-            [latitude, longitude]
-          ).addTo(map);
-
-
-          // نافذة معلومات
-          marker.bindPopup(`
-            <b>📍 موقعك الحالي</b><br>
-            خط العرض: ${latitude}<br>
-            خط الطول: ${longitude}
-          `).openPopup();
+          // وضع علامة على الموقع
+          userMarker = L.marker([lat, lon])
+            .addTo(map)
+            .bindPopup("📍 أنت هنا")
+            .openPopup();
 
         },
-
 
         function(error) {
 
-          switch (error.code) {
-
-            case error.PERMISSION_DENIED:
-              locationElement.textContent =
-                "❌ تم رفض السماح بالوصول إلى الموقع.";
-              break;
-
-            case error.POSITION_UNAVAILABLE:
-              locationElement.textContent =
-                "❌ تعذر تحديد موقعك.";
-              break;
-
-            case error.TIMEOUT:
-              locationElement.textContent =
-                "❌ انتهت مهلة تحديد الموقع.";
-              break;
-
-            default:
-              locationElement.textContent =
-                "❌ حدث خطأ أثناء تحديد الموقع.";
-          }
+          message.innerHTML =
+            "❌ لم نتمكن من تحديد موقعك: " + error.message;
 
         },
 
-
         {
           enableHighAccuracy: true,
-          timeout: 10000,
+          timeout: 15000,
           maximumAge: 0
         }
-
       );
     }
 
